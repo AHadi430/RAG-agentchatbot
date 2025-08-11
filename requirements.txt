@@ -59,7 +59,7 @@ flatbuffers==25.2.10
 fonttools==4.47.2
 fqdn==1.5.1
 frozenlist==1.4.1
-fsspec==2025.5.1
+fsspec<=2024.6.1
 gensim==4.3.3
 google-auth==2.40.3
 googleapis-common-protos==1.70.0
