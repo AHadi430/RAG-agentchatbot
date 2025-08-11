@@ -140,7 +140,7 @@ def run_agent_with_query(query: str, user_id: str, thread_id: str):
         "response": answer
     })
 
-    return answer
+    return ""  # or a string, dict, or list as appropriate
 
 def web_search_tool(query: str) -> str:
     """Live web search using Tavily."""
