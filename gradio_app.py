@@ -274,4 +274,4 @@ with gr.Blocks(title="Multi-User Multi-Thread RAG Chatbot") as demo:
         outputs=[chat_status, chatbot, message_input],
     )
 
-demo.launch()
+demo.launch(share=True)
