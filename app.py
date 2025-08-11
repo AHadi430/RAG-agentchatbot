@@ -24,7 +24,7 @@ def list_threads():
 def create_thread():
     """Create a new chat thread."""
     thread_id = str(uuid.uuid4())
-    db["session_docs"].insert_one({
+    db["session_docs"].insert_one({ 
         "user_id": USER_ID,
         "thread_id": thread_id,
         "document_name": None,
