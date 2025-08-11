@@ -5,7 +5,7 @@ colorFrom: indigo
 colorTo: pink
 sdk: gradio
 sdk_version: "4.39.0"
-app_file: rull_all.py
+app_file: app.py
 pinned: false
 ---
 
