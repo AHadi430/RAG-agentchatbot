@@ -2,7 +2,7 @@ import gradio as gr
 import requests
 import os
 
-BACKEND_URL = "http://127.0.0.1:8000"  # Adjust if backend is on different URL
+BACKEND_URL = "http://127.0.0.1:8000"  
 
 def get_threads():
     """Fetch all threads."""
