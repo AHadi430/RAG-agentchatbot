@@ -124,11 +124,12 @@
 
 import gradio as gr
 import uuid
+import inspect
 from rag_agent import (
     load_document_and_build_retriever,
     run_agent_with_query,
     clear_session,
-    db  # MongoDB DB from your rag_agent.py
+    db
 )
 
 USER_ID = "demo_user"  # Simulated logged-in user
@@ -137,15 +138,17 @@ USER_ID = "demo_user"  # Simulated logged-in user
 # Helper: Safe Output
 # -------------------
 def safe_return(*values):
-    """Ensure no None or invalid types are returned to Gradio."""
+    """Ensure no None or invalid types are returned to Gradio, log fixes."""
+    caller = inspect.stack()[1].function
     safe_values = []
-    for v in values:
+    for i, v in enumerate(values):
+        original = v
         if v is None:
-            # Default: empty string for text, empty list for chat
-            v = ""  
+            v = "" if not isinstance(original, (list, dict)) else []
+            print(f"[safe_return] {caller} output[{i}] was None → replaced with {repr(v)}")
         elif isinstance(v, bool):
-            # Gradio will misinterpret bare booleans
             v = str(v)
+            print(f"[safe_return] {caller} output[{i}] was bool → replaced with '{v}'")
         safe_values.append(v)
     return tuple(safe_values)
 
