@@ -158,7 +158,6 @@ def create_new_thread():
 
 
 def upload_pdf(file, thread_id):
-    """Upload PDF for a specific thread."""
     if not thread_id:
         return "⚠️ Please select a thread first."
     load_document_and_build_retriever(file.name, user_id=USER_ID, thread_id=thread_id)
