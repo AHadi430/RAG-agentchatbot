@@ -129,37 +129,40 @@ from rag_agent import (
     load_document_and_build_retriever,
     run_agent_with_query,
     clear_session,
-    db
+    db  # MongoDB DB from your rag_agent.py
 )
 
-USER_ID = "demo_user"  # Simulated logged-in user
+# Simulate a logged-in user (in real apps, replace this with auth logic)
+USER_ID = "demo_user"  # Fixed user for now
 
-# -------------------
-# Helper: Safe Output
-# -------------------
-def safe_return(*values):
-    """Ensure no None or invalid types are returned to Gradio, log fixes."""
+
+def safe_return(*values, debug_context=None):
+    """
+    Ensure no None/bool are returned to Gradio.
+    Logs caller function, index, and optional context.
+    """
     caller = inspect.stack()[1].function
     safe_values = []
     for i, v in enumerate(values):
         original = v
         if v is None:
             v = "" if not isinstance(original, (list, dict)) else []
-            print(f"[safe_return] {caller} output[{i}] was None → replaced with {repr(v)}")
+            print(f"[safe_return] {caller} output[{i}] was None → replaced with {repr(v)} | context={debug_context}")
         elif isinstance(v, bool):
             v = str(v)
-            print(f"[safe_return] {caller} output[{i}] was bool → replaced with '{v}'")
+            print(f"[safe_return] {caller} output[{i}] was bool → replaced with '{v}' | context={debug_context}")
         safe_values.append(v)
     return tuple(safe_values)
 
-# -------------------
-# Core Functions
-# -------------------
+
 def load_threads():
+    """Fetch thread IDs for current user."""
     threads = db["session_docs"].find({"user_id": USER_ID})
     return [doc["thread_id"] for doc in threads]
 
+
 def create_new_thread():
+    """Create new thread and return updated dropdown + status."""
     thread_id = str(uuid.uuid4())
     db["session_docs"].insert_one({
         "user_id": USER_ID,
@@ -168,39 +171,49 @@ def create_new_thread():
         "document_summary": None
     })
     threads = load_threads()
-    return safe_return(gr.update(choices=threads, value=thread_id), f"✅ New thread created: {thread_id[:8]}.")
+    return safe_return(
+        gr.update(choices=threads, value=thread_id),
+        f"✅ New thread created: {thread_id[:8]}.",
+        debug_context="create_new_thread"
+    )
+
 
 def upload_pdf(file, thread_id):
+    """Upload PDF for a specific thread."""
     if not thread_id:
-        return safe_return("⚠️ Please select a thread first.")
+        return safe_return("⚠️ Please select a thread first.", debug_context="upload_pdf - no thread_id")
     load_document_and_build_retriever(file.name, user_id=USER_ID, thread_id=thread_id)
-    return safe_return("✅ Document uploaded successfully.")
+    return safe_return("✅ Document uploaded successfully.", debug_context="upload_pdf")
+
 
 def chatbot_response(message, chat_history, thread_id):
+    """Chat within selected thread."""
     if not thread_id:
-        return safe_return("", chat_history, "⚠️ Please select a thread first.")
+        return safe_return("", chat_history, "⚠️ Please select a thread first.", debug_context=message)
     response = run_agent_with_query(message, user_id=USER_ID, thread_id=thread_id) or ""
     chat_history.append({"role": "user", "content": message})
     chat_history.append({"role": "assistant", "content": response})
-    return safe_return("", chat_history, "✅ Response generated.")
+    return safe_return("", chat_history, "✅ Response generated.", debug_context=message)
+
 
 def load_thread_history(thread_id):
+    """Load existing chat history for thread."""
     chats = db["chat_history"].find({"user_id": USER_ID, "thread_id": thread_id}).sort("_id", 1)
     history = []
     for chat in chats:
-        history.append({"role": "user", "content": chat.get("query", "")})
-        history.append({"role": "assistant", "content": chat.get("response", "")})
-    return safe_return(history, f"✅ Loaded history for {thread_id[:8]}.")
+        history.append({"role": "user", "content": chat["query"]})
+        history.append({"role": "assistant", "content": chat["response"]})
+    return safe_return(history, f"✅ Loaded history for {thread_id[:8]}.", debug_context="load_thread_history")
+
 
 def reset_thread(thread_id):
+    """Clear a specific thread."""
     if not thread_id:
-        return safe_return("⚠️ Select a thread first.", [], "")
+        return safe_return("⚠️ Select a thread first.", [], "", debug_context="reset_thread - no thread_id")
     clear_session(USER_ID, thread_id)
-    return safe_return(f"✅ Thread {thread_id[:8]} reset.", [], "")
+    return safe_return(f"✅ Thread {thread_id[:8]} reset.", [], "", debug_context="reset_thread")
 
-# -------------------
-# Gradio UI
-# -------------------
+
 with gr.Blocks(title="Multi-User Multi-Thread RAG Chatbot") as demo:
     gr.Markdown("## 🤖 Multi-Thread Chatbot with Document RAG & Web Search")
 
@@ -222,10 +235,10 @@ with gr.Blocks(title="Multi-User Multi-Thread RAG Chatbot") as demo:
             reset_btn = gr.Button("🧹 Reset Thread", variant="secondary")
             chat_status = gr.Markdown()
 
-    # Sync dropdowns
+    # Link thread dropdowns between tabs
     def sync_threads():
         threads = load_threads()
-        return safe_return(gr.update(choices=threads), gr.update(choices=threads))
+        return safe_return(gr.update(choices=threads), gr.update(choices=threads), debug_context="sync_threads")
 
     demo.load(sync_threads, inputs=[], outputs=[thread_selector, thread_selector_chat])
 
