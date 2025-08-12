@@ -17,22 +17,30 @@ def create_thread():
     return gr.update(choices=threads, value=thread_id), f"✅ New thread created: {thread_id[:8]}"
 
 def upload_pdf(file, thread_id):
-    """Correct file upload via FastAPI."""
+    """Correct file upload via FastAPI for Python 3.10 + Gradio 4.x."""
     if not file:
         return "⚠️ Please select a file to upload."
 
     try:
-        # Use the actual file path that Gradio provides
-        with open(file, "rb") as f:
-            # Extract just the filename for the form data
-            filename = os.path.basename(file)
+        # Handle Gradio file object or path
+        if hasattr(file, "name"):  # temp file object
+            filepath = file.name
+        elif isinstance(file, dict) and "name" in file:  # dict case
+            filepath = file["name"]
+        else:  # already a path string
+            filepath = str(file)
+
+        filename = os.path.basename(filepath)
+
+        with open(filepath, "rb") as f:
             files = {'file': (filename, f, 'application/pdf')}
             data = {'thread_id': thread_id}
-            res = requests.post("http://localhost:8000/upload", files=files, data=data)
+            res = requests.post(f"{BACKEND_URL}/upload", files=files, data=data)
 
         return res.json().get("status", "❌ Upload failed.")
-    
+
     except Exception as e:
+        return f"❌ Upload failed: {str(e)}"
         return f"❌ Upload failed: {str(e)}"
 
 def chat_with_agent(message, chat_history, thread_id):
@@ -44,9 +52,19 @@ def chat_with_agent(message, chat_history, thread_id):
         data={"query": message, "thread_id": thread_id}
     )
     response = res.json().get("response", "❌ Error from backend.")
-    chat_history.append({"role": "user", "content": message})
-    chat_history.append({"role": "assistant", "content": response})
-    return "", chat_history, "✅ Response generated."
+    # Convert chat_history (Gradio format) to list of dicts
+    history = []
+    for pair in chat_history:
+        if pair[0] is not None:
+            history.append({"role": "user", "content": pair[0]})
+        if pair[1] is not None:
+            history.append({"role": "assistant", "content": pair[1]})
+    # Add new messages
+    history.append({"role": "user", "content": message})
+    history.append({"role": "assistant", "content": response})
+    # Convert back to Gradio format
+    gradio_history = format_history_for_gradio(history)
+    return "", gradio_history, "✅ Response generated."
 
 def load_history(thread_id):
     """Load chat history."""
@@ -54,7 +72,8 @@ def load_history(thread_id):
         return [], "⚠️ Please select a thread first."
     res = requests.get(f"{BACKEND_URL}/threads/{thread_id}/history")
     history = res.json()
-    return history, f"✅ History loaded for {thread_id[:8]}"
+    gradio_history = format_history_for_gradio(history)
+    return gradio_history, f"✅ History loaded for {thread_id[:8]}"
 
 def reset_thread(thread_id):
     """Clear chat history & document."""
@@ -62,6 +81,21 @@ def reset_thread(thread_id):
         return "⚠️ Please select a thread.", [], None
     requests.post(f"{BACKEND_URL}/threads/{thread_id}/reset")
     return f"✅ Thread {thread_id[:8]} reset.", [], None
+
+def format_history_for_gradio(history):
+    """Convert [{'role', 'content'}] to [[user, assistant], ...] for Gradio Chatbot."""
+    pairs = []
+    i = 0
+    while i < len(history):
+        if history[i]["role"] == "user":
+            user_msg = history[i]["content"]
+            assistant_msg = None
+            if i + 1 < len(history) and history[i + 1]["role"] == "assistant":
+                assistant_msg = history[i + 1]["content"]
+                i += 1
+            pairs.append([user_msg, assistant_msg])
+        i += 1
+    return pairs
 
 with gr.Blocks(title="Gradio Frontend for FastAPI RAG Chatbot") as demo:
     gr.Markdown("## 🤖 RAG Chatbot (Gradio + FastAPI Backend)")
@@ -123,5 +157,5 @@ with gr.Blocks(title="Gradio Frontend for FastAPI RAG Chatbot") as demo:
         outputs=[chat_status, chatbot, message_input],
     )
 
-demo.launch(server_name="0.0.0.0", share=True)
+demo.launch()
 
