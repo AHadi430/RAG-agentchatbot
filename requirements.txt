@@ -196,7 +196,7 @@ pbr==6.1.1
 pdfminer.six==20250506
 pdfplumber==0.11.7
 pexpect==4.9.0
-pillow==11.3.0
+pillow
 platformdirs==4.1.0
 playwright==1.50.0
 pluggy==1.6.0
