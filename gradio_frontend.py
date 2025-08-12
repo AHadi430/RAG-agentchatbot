@@ -80,7 +80,7 @@ with gr.Blocks(title="Gradio Frontend for FastAPI RAG Chatbot") as demo:
         with gr.Tab("💬 Chat"):
             thread_selector_chat = gr.Dropdown(label="Select Thread", choices=[], value=None)
             load_history_btn = gr.Button("🔄 Load History")
-            chatbot = gr.Chatbot(label="Chat", height=500, type="messages")
+            chatbot = gr.Chatbot(label="Chat", height=500)  # <-- Remove type="messages"
             with gr.Row():
                 message_input = gr.Textbox(placeholder="Type your message...", show_label=False, scale=4)
                 send_btn = gr.Button("Send", variant="primary", scale=1)
