@@ -53,6 +53,8 @@ def chat_with_agent(message, chat_history, thread_id):
 
 def load_history(thread_id):
     """Load chat history."""
+    if not thread_id:
+        return [], "⚠️ Please select a thread first."
     res = requests.get(f"{BACKEND_URL}/threads/{thread_id}/history")
     history = res.json()
     return history, f"✅ History loaded for {thread_id[:8]}"
@@ -124,4 +126,5 @@ with gr.Blocks(title="Gradio Frontend for FastAPI RAG Chatbot") as demo:
         outputs=[chat_status, chatbot, message_input],
     )
 
-demo.launch()
+demo.launch(server_name="0.0.0.0", share=True)
+
