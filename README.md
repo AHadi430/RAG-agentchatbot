@@ -1,4 +1,4 @@
----
+<!-- ---
 title: RAG Chatbot
 emoji: 🤖
 colorFrom: indigo
@@ -9,4 +9,4 @@ app_file: app.py
 pinned: false
 ---
 
-An AI-powered Retrieval-Augmented Generation (RAG) chatbot for financial document analysis.
+An AI-powered Retrieval-Augmented Generation (RAG) chatbot for financial document analysis. -->

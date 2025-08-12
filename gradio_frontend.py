@@ -18,9 +18,6 @@ def create_thread():
 
 def upload_pdf(file, thread_id):
     """Correct file upload via FastAPI."""
-    if not thread_id:
-        return "⚠️ Please select a thread first."
-    
     if not file:
         return "⚠️ Please select a file to upload."
 
