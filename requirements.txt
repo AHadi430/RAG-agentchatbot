@@ -23,7 +23,7 @@ blinker==1.9.0
 Brotli==1.1.0
 build==1.2.2.post1
 cachetools==5.5.2
-Camelot==12.6.29
+Camelot
 certifi==2025.7.9
 cffi==1.16.0
 chardet==5.2.0
